@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rig-1 - Package & Price P&L Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#14213d;--mut:#6b7a90;--line:#e3e9f2;--pos:#0f9d58;--neg:#d93025;--posbg:#e3f6ec;--negbg:#fde8e6;--b1:#1f3a93;--b2:#6d28d9;--acc:#f59e0b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1525;--card:#18213a;--ink:#e8edf7;--mut:#9aa8c2;--line:#2a3555;--posbg:#083820;--negbg:#3f1414;--b1:#3b82f6;--b2:#8b5cf6}}
+:root[data-theme="dark"]{--bg:#0e1525;--card:#18213a;--ink:#e8edf7;--mut:#9aa8c2;--line:#2a3555;--posbg:#083820;--negbg:#3f1414;--b1:#3b82f6;--b2:#8b5cf6}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:linear-gradient(120deg,var(--b1),var(--b2));color:#fff;padding:16px 20px}
+header h1{margin:0;font-size:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+header p{margin:6px 0 0;opacity:.9;font-size:12px}
+.nav-bar{margin-top:10px;padding:6px 0;border-top:1px solid rgba(255,255,255,0.2);display:flex;flex-wrap:wrap;gap:8px;font-size:13px;align-items:center}
+.adm-bar{margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:rgba(0,0,0,0.15);padding:8px 12px;border-radius:8px}
+.demo{background:var(--acc);color:#222;text-align:center;padding:6px;font-weight:600;font-size:12px}
+main{padding:14px 16px;max-width:1400px;margin:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:12px;align-items:flex-end}
+.bar label{font-size:11px;color:var(--mut);display:flex;flex-direction:column;gap:2px;min-width:120px}
+.bar select,.bar input{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:13px}
+.bar button{padding:8px 14px;border:0;border-radius:8px;background:var(--b1);color:#fff;font-weight:600;cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;border-top:3px solid var(--b1);box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.card small{color:#334155;display:block;font-size:12px;font-weight:700;margin-bottom:2px}
+.card b{font-size:22px;font-weight:800;color:#0f172a}
+.card.pos{border-top-color:#10b981}
+.card.neg{border-top-color:#ef4444}
+.card.big{background:linear-gradient(135deg,var(--b1),var(--b2));color:#ffffff !important}
+.card.big.pos{background:linear-gradient(135deg,#047857,#10b981) !important;color:#ffffff !important;border:1px solid #059669 !important;box-shadow:0 4px 14px rgba(16,185,129,0.35)}
+.card.big.neg{background:linear-gradient(135deg,#b91c1c,#ef4444) !important;color:#ffffff !important;border:1px solid #dc2626 !important;box-shadow:0 4px 14px rgba(239,68,68,0.35)}
+.card.big, .card.big *{color:#ffffff !important}
+.pos-t{color:#059669 !important;font-weight:700}.neg-t{color:#dc2626 !important;font-weight:700}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+h2{margin:0 0 8px;font-size:14px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:10px;margin-bottom:12px}
+.sc{overflow-x:auto;max-width:100%}table{border-collapse:collapse;width:100%;font-size:12px}
+th{background:var(--b1);color:#fff;padding:6px 8px;text-align:right;white-space:nowrap;position:sticky;top:0}
+th:first-child{text-align:left}
+td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+tr.k{cursor:pointer}tr.k:hover td{background:var(--bg)}tr.l td{background:var(--negbg)}
+.chip{padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px}.chip.ok{background:var(--posbg);color:var(--pos)}.chip.err{background:var(--negbg);color:var(--neg)}
+.br{display:grid;grid-template-columns:130px 1fr 90px;gap:6px;align-items:center;margin:4px 0;font-size:12px}.br i{display:block;height:14px;border-radius:4px}
+.mut{color:var(--mut)}
+.up{padding:8px 14px;border:0;border-radius:8px;background:#fff;color:var(--b1);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+.up:hover{background:#f0f4ff}
+.exp-btn{padding:8px 12px;border:1px solid rgba(255,255,255,0.4);border-radius:8px;background:rgba(255,255,255,0.15);color:#fff;font-weight:600;cursor:pointer;font-size:12px}
+.exp-btn:hover{background:rgba(255,255,255,0.25)}
+#msg{font-size:12px;font-weight:600;color:#fef08a;margin-left:8px}
+</style></head><body>
+<header>
+  <h1>
+    <span id="pageTitle">Rig-1 - Package & Price P&L Dashboard</span>
+  </h1>
+  <p>Package &amp; Price – Profit / Loss monitoring · Amounts in BDT · Last updated: <span id="upd">24-Nov-2026 09:34 AM</span> <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,0.18);border:1px solid #10b981;color:#10b981;font-weight:700;font-size:11px;padding:2px 8px;border-radius:12px;margin-left:8px"><span style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;display:inline-block"></span> LIVE AUTO-SYNC ACTIVE</span></p>
+  
+  <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+    <span style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.45);border-radius:8px;padding:5px 14px;font-size:13px;font-weight:700;color:#ffffff;display:inline-flex;align-items:center;gap:6px;">🏢 Rig-1 Exclusive Dashboard</span>
+    <span style="opacity:0.85;font-size:12px;color:#f1f5f9;">(Locked to Rig-1 data only)</span>
+  </div>
+
+  <div class="adm-bar" id="adm">
+    <button class="sync-now-btn" id="syncBtn" style="background:#10b981;color:#fff;font-weight:700;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;box-shadow:0 2px 6px rgba(16,185,129,0.35);">
+      <span id="syncIcon" style="display:inline-block;transition:transform 0.5s ease;">🔄</span> <span id="syncText">Sync / Refresh Now</span>
+    </button>
+    <button class="up" id="upb" style="padding:8px 14px;border:0;border-radius:8px;background:#fff;color:var(--b1);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;">📁 Load Excel File</button>
+    <input type="file" id="upf" accept=".xlsx,.xls" hidden>
+    <button class="exp-btn" id="expBtn">💾 Save/Export HTML</button>
+    <button class="exp-btn" id="resetBtn" style="opacity:0.8;">↺ Reset</button>
+    <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);padding:4px 10px;border-radius:6px;font-size:12px;color:#e2e8f0;margin-left:auto;">
+      <span style="width:7px;height:7px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;display:inline-block"></span>
+      <span id="syncStatus">Auto-sync active (every 15s)</span>
+    </span>
+    <span id="msg"></span>
+  </div>
+</header>
+
+<div class="demo" id="demo" hidden>SAMPLE DATA – for design preview only.</div>
+
+<main>
+  <div class="bar" id="bar"></div>
+  <div class="cards" id="cards"></div>
+  <div class="grid">
+    <section><h2>Net profit / (loss) by Area</h2><div id="b_a"></div></section>
+    <section><h2>Net profit / (loss) by Package</h2><div id="b_pk"></div></section>
+  </div>
+  <div id="tabs"></div>
+  <section>
+    <h2>Vehicle-wise / customer-wise profit &amp; loss <span class="mut" id="vn"></span></h2>
+    <div class="sc" style="max-height:500px">
+      <table id="vt"></table>
+    </div>
+    <button id="more" style="margin-top:8px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;display:none;">Load more rows…</button>
+  </section>
+</main>
+
+<script id="data" type="application/json">{"rows": [{"d": "Rig-1", "a": "COC-1", "u": "COC1-2", "m": "Oct-26", "c": "NAZMUL ALAM", "ch": "R6843", "md": "PRO 1080 (3515) HT", "pk": "Cash", "tn": "", "sg": "LD", "q": 1, "dp": 2650000.0, "ap": 2750000.0, "ddp": 2650000.0, "adp": 0.0, "cl": -25000.0, "rg": 100000.0, "pv": 0.0, "vc": 25000.0, "dc": 0.0, "dc_cost": -45000.0, "ac": 0, "net": 100000.0}, {"d": "Rig-1", "a": "COC-1", "u": "COC1-2", "m": "Oct-26", "c": "MOHAMMAD ASAD", "ch": "R6844", "md": "PRO 1055 (2815) CT", "pk": "Cash", "tn": "", "sg": "LD", "q": 1, "dp": 2175000.0, "ap": 2260000.0, "ddp": 2175000.0, "adp": 0.0, "cl": -0.0, "rg": 66000.0, "pv": 0.0, "vc": 0.0, "dc": 0.0, "dc_cost": -45000.0, "ac": 0, "net": 66000.0}, {"d": "Rig-1", "a": "COC-1", "u": "COC1-2", "m": "Oct-26", "c": "MD. RAJAUL KARIM RATAN", "ch": "R6847", "md": "PRO 1095 (4065)", "pk": "Cash", "tn": "", "sg": "LD", "q": 1, "dp": 2750000.0, "ap": 2820000.0, "ddp": 2750000.0, "adp": 0.0, "cl": -80000.0, "rg": 98000.0, "pv": 0.0, "vc": 80000.0, "dc": 0.0, "dc_cost": -45000.0, "ac": 0, "net": 98000.0}, {"d": "Rig-1", "a": "COC-1", "u": "COC1-3", "m": "Nov-26", "c": "MD. MOGEBOR RAHMAN", "ch": "L18723", "md": "PRO 6031 (6150) H", "pk": "CNC @8% 29M", "tn": "28M", "sg": "HD", "q": 1, "dp": 6314000.0, "ap": 6469000.0, "ddp": 1500000.0, "adp": 1969000.0, "cl": 0.0, "rg": 150315.0, "pv": 155000.0, "vc": 0.0, "dc": 0.0, "dc_cost": -45000.0, "ac": 0, "net": 305315.0}, {"d": "Rig-1", "a": "COC-3", "u": "COC3-1", "m": "Nov-26", "c": "MIZANUR RAHMAN", "ch": "L18725", "md": "PRO 1112 (3800)", "pk": "CC @5% 24M", "tn": "24M", "sg": "MD", "q": 1, "dp": 3367000.0, "ap": 3690000.0, "ddp": 650000.0, "adp": 500000.0, "cl": 0.0, "rg": 108815.0, "pv": 323000.0, "vc": 0.0, "dc": 0.0, "dc_cost": -45000.0, "ac": 0, "net": 431815.0}, {"d": "Rig-1", "a": "COC-3", "u": "COC3-2", "m": "Nov-26", "c": "HASI", "ch": "L18667", "md": "PRO 3015 (4490)", "pk": "CC @5% 24M", "tn": "24M", "sg": "MD", "q": 1, "dp": 3836000.0, "ap": 4250000.0, "ddp": 750000.0, "adp": 1290000.0, "cl": 0.0, "rg": 110315.0, "pv": 414000.0, "vc": 0.0, "dc": 45000.0, "dc_cost": 0, "ac": -10000.0, "net": 559315.0}, {"d": "Rig-1", "a": "COC-1", "u": "COC1-1", "m": "Nov-26", "c": "MD ABDUL MOTALEB", "ch": "L18729", "md": "PRO 3015 (4490)", "pk": "CC @5% 24M", "tn": "23M", "sg": "MD", "q": 1, "dp": 3836000.0, "ap": 4187000.0, "ddp": 750000.0, "adp": 65000.0, "cl": 0.0, "rg": 135000.0, "pv": 351000.0, "vc": 0.0, "dc": 0.0, "dc_cost": -45000.0, "ac": 0, "net": 486000.0}], "national": false, "demo": false, "scope": "Rig-1", "emp": {"COC1-1": "SHAHADATHOSSAIN", "COC1-2": "ALOMGIRHOSSAIN", "COC1-3": "BIPLOBHOSSAIN", "COC3-1": "LALMOHONCHANDRAROY", "COC3-2": "BAREKMIA"}, "upd": "24-Nov-2026 09:34 AM"}</script>
+
+<script>
+const $ = s => document.getElementById(s);
+let D = JSON.parse(document.getElementById('data').textContent);
+
+const storageKey = 'pnl_data_v5_' + (D.scope || 'National');
+try {
+  const cached = localStorage.getItem(storageKey);
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (parsed && parsed.rows && parsed.rows.length) {
+      D = parsed;
+      const updEl = $('upd');
+      if (updEl) updEl.textContent = (D.upd || '') + ' (from browser memory)';
+    }
+  }
+} catch(e) {}
+
+let E = D.emp || {};
+let R = D.rows;
+const F = {d: '', m: '', a: '', u: '', pk: '', sg: '', q: ''};
+let lim = 100, sortAsc = true;
+const lab = (k, v) => k === 'u' && E[v] ? v + ' · ' + E[v] : v;
+
+// Initial scope selection from hash or default configuration
+const initHash = (window.location.hash || '').replace('#', '').trim();
+if (['Div-1', 'Div-2', 'Div-3', 'Rig-1'].includes(initHash)) {
+  F.d = initHash;
+} else if (D.scope && ['Div-1', 'Div-2', 'Div-3', 'Rig-1'].includes(D.scope)) {
+  F.d = D.scope;
+}
+
+// In-Page Interactive Division Switcher (Works seamlessly on OneDrive shared links!)
+function switchDivision(divName) {
+  F.d = divName;
+  F.a = '';
+  F.u = '';
+  lim = 100;
+  
+  // Update Tab buttons visual state
+  document.querySelectorAll('.scope-tab').forEach(b => {
+    const isAct = (b.dataset.scope || '') === (divName || '');
+    b.style.background = isAct ? '#fff' : 'rgba(255,255,255,0.12)';
+    b.style.color = isAct ? 'var(--b1)' : '#e2e8f0';
+    b.style.fontWeight = isAct ? '700' : '500';
+    b.style.boxShadow = isAct ? '0 2px 8px rgba(0,0,0,0.2)' : 'none';
+  });
+
+  // Update Header Title
+  const titleEl = $('pageTitle');
+  const newTitle = divName ? (divName + ' – Package & Price P&L Dashboard') : 'National - Package & Price P&L Dashboard';
+  if (titleEl) titleEl.textContent = newTitle;
+  document.title = newTitle;
+
+  // Update URL Hash without page jump
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(null, null, divName ? '#' + divName : '#National');
+  }
+
+  go(true);
+}
+
+window.addEventListener('hashchange', () => {
+  const h = (window.location.hash || '').replace('#', '').trim();
+  const targetScope = ['Div-1', 'Div-2', 'Div-3', 'Rig-1'].includes(h) ? h : '';
+  if (F.d !== targetScope) switchDivision(targetScope);
+});
+
+const fm = n => {
+  const a = Math.abs(n), s = n < 0 ? '-' : '';
+  return a >= 1e7 ? s + (a / 1e7).toFixed(2) + ' Cr' : a >= 1e5 ? s + (a / 1e5).toFixed(2) + ' L' : s + Math.round(a).toLocaleString('en-IN');
+};
+const full = n => Math.round(n).toLocaleString('en-IN');
+const cl = n => n < 0 ? 'neg-t' : n > 0 ? 'pos-t' : '';
+const uniq = (k, rows) => [...new Set(rows.map(r => r[k]))].filter(Boolean).sort();
+
+function filt() {
+  const q = F.q.toLowerCase();
+  return R.filter(r => 
+    (!F.d || r.d === F.d) &&
+    (!F.m || r.m === F.m) &&
+    (!F.a || r.a === F.a) &&
+    (!F.u || r.u === F.u) &&
+    (!F.pk || r.pk === F.pk) &&
+    (!F.sg || r.sg === F.sg) &&
+    (!q || [r.a, r.u, r.c, r.ch, r.md, r.d, r.pk, r.sg, r.tn || '', E[r.u] || ''].some(v => String(v).toLowerCase().includes(q)))
+  );
+}
+
+function sel(id, label, k, opts) {
+  return `<label>${label}<select data-f="${k}"><option value="">All</option>${opts.map(o => `<option value="${o}"${F[k] === o ? ' selected' : ''}>${lab(k, o)}</option>`).join('')}</select></label>`;
+}
+
+function bar() {
+  let h = '';
+  if (D.national) h += sel(0, 'Division', 'd', uniq('d', R));
+  h += sel(0, 'Month', 'm', uniq('m', R)) +
+       sel(0, 'Area', 'a', uniq('a', R.filter(r => !F.d || r.d === F.d))) +
+       sel(0, 'Sales Unit', 'u', uniq('u', R.filter(r => (!F.d || r.d === F.d) && (!F.a || r.a === F.a)))) +
+       sel(0, 'Package', 'pk', uniq('pk', R)) +
+       sel(0, 'Segment', 'sg', uniq('sg', R));
+  h += `<label style="flex:1;min-width:200px">Search (area, unit, sales person, customer, chassis, model, tenure)<input id="q" value="${F.q.replace(/"/g, '')}" placeholder="Type to filter…"></label>`;
+  h += `<button id="rs">Reset filters</button>`;
+  $('bar').innerHTML = h;
+
+  $('bar').querySelectorAll('select').forEach(e => e.onchange = () => {
+    F[e.dataset.f] = e.value;
+    if (e.dataset.f === 'd') { F.a = ''; F.u = ''; }
+    if (e.dataset.f === 'a') { F.u = ''; }
+    lim = 100;
+    go(true);
+  });
+  $('q').oninput = e => { F.q = e.target.value; lim = 100; go(false); };
+  $('rs').onclick = () => { Object.keys(F).forEach(k => F[k] = ''); lim = 100; go(true); };
+}
+
+const S = a => ({
+  n: a.reduce((s, r) => s + r.q, 0),
+  cl: a.reduce((s, r) => s + r.cl, 0),
+  rg: a.reduce((s, r) => s + (r.rg || 0), 0),
+  pv: a.reduce((s, r) => s + r.pv, 0),
+  vc: a.reduce((s, r) => s + r.vc, 0),
+  dc: a.reduce((s, r) => s + (r.dc || 0), 0),
+  ac: a.reduce((s, r) => s + (r.ac || 0), 0),
+  net: a.reduce((s, r) => s + r.net, 0)
+});
+
+function grp(rows, k) {
+  const m = {};
+  rows.forEach(r => (m[r[k]] = m[r[k]] || []).push(r));
+  return Object.entries(m).map(([key, a]) => ({ key, ...S(a), net_u: a.length ? S(a).net / a.reduce((s, r) => s + r.q, 0) : 0 })).sort((x, y) => y.net - x.net);
+}
+
+function cards(s) {
+  const isProf = s.net >= 0;
+  const c = (l, v, x = '') => `<div class="card ${x}"><small style="color:#334155;font-size:12px;font-weight:700;">${l}</small><b class="${x === 'pos' ? 'pos-t' : x === 'neg' ? 'neg-t' : cl(v)}" style="font-size:22px;font-weight:800;">${fm(v)}</b></div>`;
+  $('cards').innerHTML = `
+    <div class="card big ${isProf ? 'pos' : 'neg'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-weight:800;font-size:13px;letter-spacing:0.5px;color:#ffffff !important;display:inline-flex;align-items:center;gap:6px;text-shadow:0 1px 2px rgba(0,0,0,0.3);"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ffffff;box-shadow:0 0 6px #ffffff;margin-right:2px;"></span> NET ${isProf ? 'PROFIT' : 'LOSS'}</span>
+        <span style="background:rgba(255,255,255,0.3);color:#ffffff !important;font-size:11px;font-weight:800;padding:3px 10px;border-radius:12px;letter-spacing:0.5px;text-transform:uppercase;border:1px solid rgba(255,255,255,0.6);text-shadow:0 1px 2px rgba(0,0,0,0.25);">${isProf ? 'PROFIT' : 'LOSS'}</span>
+      </div>
+      <b style="font-size:28px;display:block;margin:4px 0;color:#ffffff !important;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,0.3);letter-spacing:0.3px;">${fm(s.net)}</b>
+      <span style="color:#ffffff !important;font-weight:700;font-size:12px;display:block;letter-spacing:0.2px;text-shadow:0 1px 2px rgba(0,0,0,0.25);">${full(s.net)} BDT &bull; ${isProf ? 'Overall Profit' : 'Overall Loss'}</span>
+    </div>
+    <div class="card">
+      <small style="color:#334155;font-size:12px;font-weight:700;">Total Vehicles</small>
+      <b style="font-size:24px;color:#0f172a;font-weight:800;">${s.n}</b>
+      <small style="color:${isProf ? '#059669' : '#dc2626'};font-weight:700;font-size:12px;margin-top:2px;">
+        ${s.n ? (isProf ? '+' : '') + fm(s.net / s.n) + ' ' + (isProf ? 'profit' : 'loss') + ' / unit' : ''}
+      </small>
+    </div>
+    ${c('Cash loss', s.cl, 'neg')}
+    ${s.rg ? c('Regi / Insurance gain', s.rg, 'pos') : ''}
+    ${c('Price variance', s.pv, s.pv >= 0 ? 'pos' : 'neg')}
+    ${c('VECV support', s.vc, 'pos')}
+    ${c('Dealer comm. saved', s.dc, s.dc >= 0 ? 'pos' : 'neg')}
+    ${s.ac ? c('Agent comm. (deduction)', s.ac, 'neg') : ''}
+  `;
+}
+
+function bars(id, g) {
+  const mx = Math.max(1, ...g.map(x => Math.abs(x.net)));
+  $(id).innerHTML = g.length ? g.map(x => `
+    <div class="br" title="${x.key}: ${full(x.net)} BDT">
+      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.key}</div>
+      <div style="background:var(--line);border-radius:4px;overflow:hidden;height:14px">
+        <i style="width:${(Math.abs(x.net) / mx * 100).toFixed(1)}%;background:${x.net < 0 ? 'var(--neg)' : 'var(--pos)'}"></i>
+      </div>
+      <div style="text-align:right" class="${cl(x.net)}">${fm(x.net)}</div>
+    </div>`).join('') : '<div class="mut">No data</div>';
+}
+
+function tbl(title, k, g, fk) {
+  return `
+  <section>
+    <h2>${title} <span class="mut">(click a row to filter)</span></h2>
+    <div class="sc">
+      <table>
+        <tr><th>${title.replace('By ', '')}</th><th>Qty</th><th>Cash Loss</th><th>Price Var.</th><th>VECV</th><th>Net P&amp;L</th><th>Per Unit</th><th>Status</th></tr>
+        ${g.map(x => `
+          <tr class="k ${x.net < 0 ? 'l' : ''}" data-k="${fk}" data-v="${x.key}">
+            <td><b>${lab(fk, x.key)}</b></td>
+            <td>${x.n}</td>
+            <td class="neg-t">${fm(x.cl)}</td>
+            <td class="${cl(x.pv)}">${fm(x.pv)}</td>
+            <td class="pos-t">${fm(x.vc)}</td>
+            <td class="${cl(x.net)}"><b>${fm(x.net)}</b></td>
+            <td class="${cl(x.net_u)}">${fm(x.net_u)}</td>
+            <td><span class="chip ${x.net >= 0 ? 'ok' : 'err'}">${x.net >= 0 ? 'PROFIT' : 'LOSS'}</span></td>
+          </tr>`).join('')}
+      </table>
+    </div>
+  </section>`;
+}
+
+function veh(a) {
+  const s = [...a].sort((x, y) => sortAsc ? x.net - y.net : y.net - x.net);
+  $('vn').textContent = `· ${a.length} rows, worst first`;
+  $('vt').innerHTML = `
+    <tr>
+      <th>Month</th><th>Customer</th><th>Chassis</th><th>Division</th><th>Area</th><th>Unit</th><th>Sales Person</th><th>Model</th><th>Package</th><th>Tenure</th><th>Qty</th><th>Declared</th><th>Actual</th><th>DP Var</th><th>Cash Loss</th><th>Price Var</th><th>VECV</th><th>Regi Gain</th><th>Dealer Comm Saved</th><th>Agent Comm</th><th id="nh" style="cursor:pointer" title="Click to reverse sort">Net P&amp;L ⬍</th><th>Status</th>
+    </tr>
+    ${s.slice(0, lim).map(r => `
+      <tr class="${r.net < 0 ? 'l' : ''}">
+        <td>${r.m}</td>
+        <td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${r.c}"><b>${r.c}</b></td>
+        <td style="font-family:monospace">${r.ch}</td>
+        <td>${r.d}</td>
+        <td>${r.a}</td>
+        <td>${r.u}</td>
+        <td style="text-align:left">${E[r.u] || ''}</td>
+        <td style="text-align:left"><b>${r.md}</b></td>
+        <td>${r.pk}</td>
+        <td>${r.tn || '-'}</td>
+        <td>${r.q}</td>
+        <td>${full(r.dp)}</td>
+        <td>${full(r.ap)}</td>
+        <td class="${cl(r.adp - r.ddp)}">${full(r.adp - r.ddp)}</td>
+        <td class="neg-t">${full(r.cl)}</td>
+        <td class="${cl(r.pv)}">${full(r.pv)}</td>
+        <td class="pos-t">${full(r.vc)}</td>
+        <td class="pos-t">${r.rg ? full(r.rg) : '-'}</td>
+        <td class="${cl(r.dc)}">${r.dc ? full(r.dc) : '-'}</td>
+        <td class="${cl(r.ac)}">${r.ac ? full(r.ac) : '-'}</td>
+        <td class="${cl(r.net)}"><b>${full(r.net)}</b></td>
+        <td><span class="chip ${r.net >= 0 ? 'ok' : 'err'}">${r.net >= 0 ? 'PROFIT' : 'LOSS'}</span></td>
+      </tr>`).join('')}
+  `;
+  $('nh').onclick = () => { sortAsc = !sortAsc; go(false); };
+  $('more').style.display = a.length > lim ? '' : 'none';
+}
+
+function go(rebuildBar) {
+  if (rebuildBar) bar();
+  const a = filt();
+  cards(S(a));
+  const ga = grp(a, 'a');
+  bars('b_a', ga);
+  bars('b_pk', grp(a, 'pk'));
+
+  $('tabs').innerHTML = 
+    (D.national ? tbl('By Division', 'd', grp(a, 'd'), 'd') : '') +
+    tbl('By Area', 'a', ga, 'a') +
+    tbl('By Sales Unit', 'u', grp(a, 'u'), 'u') +
+    tbl('By Package', 'pk', grp(a, 'pk'), 'pk') +
+    tbl('By Segment', 'sg', grp(a, 'sg'), 'sg') +
+    tbl('By Model', 'md', grp(a, 'md'), 'md');
+
+  veh(a);
+
+  $('tabs').querySelectorAll('tr.k').forEach(t => t.onclick = () => {
+    const k = t.dataset.k;
+    if (k === 'md') { F.q = t.dataset.v; } else { F[k] = t.dataset.v; }
+    lim = 100;
+    go(true);
+  });
+}
+
+$('more').onclick = () => { lim += 200; go(false); };
+if (D.demo) $('demo').hidden = false;
+switchDivision(F.d);
+
+// ----------------- Client-side Excel Upload & Sync -----------------
+const msg = h => { $('msg').innerHTML = h; };
+
+function parseClientWorkbook(wb, scope) {
+  const S = n => {
+    const s = wb.Sheets[n];
+    if (!s) throw new Error('Sheet "' + n + '" not found in uploaded file.');
+    return s;
+  };
+  const pm = S('Price Master'), as_sheet = S('Assumptions'), au = S('Area & Units');
+  const v = (s, a) => { const c = s[a]; return c ? c.v : undefined; };
+
+  const VE = Number(v(as_sheet, 'C6')) || 0;
+  const DE = Number(v(as_sheet, 'C7')) || 0;
+
+  const PKN = [], PKG = [];
+  for (let r = 24; r <= 35; r++) {
+    const pn = v(as_sheet, 'A' + r);
+    if (pn) {
+      PKN.push(String(pn).trim());
+      PKG.push(String(v(as_sheet, 'B' + r) || '').trim());
+    }
+  }
+
+  // Check headers in Price Master Row 5
+  let colCash = 'G', colCashEmi = 'Q', col5_29 = 'M', col5_24 = 'N', col8_29 = 'O', col13_60 = 'P';
+  for (let c = 1; c <= 35; c++) {
+    const cl = XLSX.utils.encode_col(c - 1);
+    const h = String(v(pm, cl + '5') || '').toLowerCase().trim();
+    if (h.includes('proposed cash')) colCash = cl;
+    else if (h.includes('cash emi') && h.includes('price')) colCashEmi = cl;
+    else if (h.includes('price') && !h.includes('profit') && !h.includes('instl') && !h.includes('check')) {
+      if (h.includes('5%') && h.includes('24')) col5_24 = cl;
+      else if (h.includes('5%') && h.includes('29')) col5_29 = cl;
+      else if (h.includes('8%')) col8_29 = cl;
+      else if (h.includes('13.75%') || h.includes('60')) col13_60 = cl;
+    }
+  }
+
+  const P = {};
+  for (let r = 6; r <= 28; r++) {
+    const m = v(pm, 'C' + r);
+    if (m) {
+      const pmap = {};
+      PKN.forEach(pkg => {
+        let tc = colCash;
+        if (pkg.includes('Cash EMI')) tc = colCashEmi;
+        else if (pkg === 'Cash') tc = colCash;
+        else if (pkg.includes('5%') && pkg.includes('24')) tc = col5_24;
+        else if (pkg.includes('5%')) tc = col5_29;
+        else if (pkg.includes('8%')) tc = col8_29;
+        else if (pkg.includes('13.75%') || pkg.includes('60')) tc = col13_60;
+        pmap[pkg] = Number(v(pm, tc + r)) || 0;
+      });
+
+      P[String(m).trim()] = {
+        sg: String(v(pm, 'A' + r) || '').trim(),
+        pres_cash: Number(v(pm, 'E' + r)) || 0, // Col E: Present Cash
+        cd: Number(v(pm, 'I' + r)) || 0,
+        rg: Number(v(pm, 'AC' + r)) || 0,
+        pmap,
+        dce: Number(v(pm, 'K' + r)) || 0,
+        dcc: Number(v(pm, 'J' + r)) || 0
+      };
+    }
+  }
+
+  const em = {};
+  for (let r = 5; r <= 400; r++) {
+    const u = v(au, 'C' + r);
+    if (u) em[String(u).trim()] = String(v(au, 'E' + r) || '').trim();
+  }
+
+  const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rows = [];
+
+  wb.SheetNames.forEach(n => {
+    if (!n.endsWith(' Data')) return;
+    const dv = n.slice(0, -5).trim();
+    if (scope && dv !== scope) return;
+    const ws = wb.Sheets[n];
+
+    const h7 = String(v(ws, 'G4') || '').toLowerCase();
+    const isClean = h7.includes('actual');
+    const apCol = isClean ? 'G' : 'I';
+    const adpCol = isClean ? 'H' : 'J';
+    const tnCol = isClean ? 'I' : 'K';
+    const dcCol = isClean ? 'J' : 'L';
+    const acCol = isClean ? 'K' : 'M';
+    const rgCol = isClean ? 'L' : 'N';
+    const areaCol = isClean ? 'Z' : 'AE';
+    const unitCol = isClean ? 'AA' : 'AF';
+
+    for (let r = 6; r <= 1005; r++) {
+      const md_raw = v(ws, 'D' + r), pk_raw = v(ws, 'E' + r);
+      if (!md_raw || !pk_raw) continue;
+      const md = String(md_raw).trim(), pk = String(pk_raw).trim();
+      const q = Number(v(ws, 'F' + r));
+      const pi = PKN.findIndex(p => p.toLowerCase() === pk.toLowerCase());
+      if (!P[md] || pi < 0 || !q) continue;
+
+      let dt = v(ws, 'A' + r);
+      dt = dt instanceof Date ? new Date(dt.getTime() + 43200000) : typeof dt === 'number' ? new Date(Math.round((dt - 25569) * 864e5)) : null;
+
+      const m = P[md], g = PKG[pi];
+      const ap = Number(v(ws, apCol + r)) || 0;
+      const adp = Number(v(ws, adpCol + r)) || 0;
+      const dp = m.pmap[pk] || 0;
+      const ddp = g === 'Cash' ? dp : g === 'Cash EMI' ? m.dce : m.dcc;
+
+      const tn = String(v(ws, tnCol + r) || '').trim();
+      const dc_amt = Number(v(ws, dcCol + r)) || 0;
+      const ac_amt = Number(v(ws, acCol + r)) || 0;
+      const rg_amt = Number(v(ws, rgCol + r)) || 0;
+
+      const pres_cash = m.pres_cash || 0;
+      let cl = 0, vc = 0, pv = 0;
+      if (g === 'Cash') {
+        const cash_loss_val = (pres_cash && ap && ap < pres_cash) ? (pres_cash - ap) : 0;
+        cl = -q * cash_loss_val;
+        vc = q * cash_loss_val;
+        pv = 0; // Price variance strictly for installment (kisti) only
+      } else {
+        cl = 0;
+        vc = 0;
+        pv = ap && dp ? q * (ap - dp) : 0;
+      }
+      const rg = rg_amt > 0 ? q * rg_amt : 0;
+      const dc_cost = dc_amt > 0 ? -q * dc_amt : 0;
+      const ac_cost = ac_amt > 0 ? -q * ac_amt : 0;
+      const dc_saved = q * (DE - dc_amt);
+      const net = cl + rg + pv + vc + dc_saved + ac_cost;
+
+      rows.push({
+        d: dv,
+        a: String(v(ws, areaCol + r) || '(no area)').trim(),
+        u: String(v(ws, unitCol + r) || '(no unit)').trim(),
+        m: dt ? MN[dt.getUTCMonth()] + '-' + String(dt.getUTCFullYear()).slice(2) : 'n/a',
+        c: String(v(ws, 'C' + r) || '').trim(),
+        ch: String(v(ws, 'B' + r) || '').trim(),
+        md, pk, tn, sg: m.sg, q, dp, ap, ddp, adp, cl, rg, pv, vc, dc: dc_saved, dc_cost, ac: ac_cost,
+        net
+      });
+    }
+  });
+
+  const emp = {};
+  rows.forEach(r => { if (em[r.u]) emp[r.u] = em[r.u]; });
+  const now = new Date();
+  const upd = String(now.getDate()).padStart(2, '0') + '-' + MN[now.getMonth()] + '-' + now.getFullYear() + ' ' + now.toLocaleTimeString();
+
+  return { rows, national: D.national, demo: false, scope: D.scope || '', emp, upd };
+}
+
+$('upb').onclick = () => $('upf').click();
+
+$('upf').onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  msg('⏳ Reading Excel file...');
+  try {
+    const buffer = await f.arrayBuffer();
+    let wb;
+    try {
+      wb = XLSX.read(buffer, { type: 'array', cellDates: true, password: '6928' });
+    } catch(pe) {
+      wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+    }
+    const pend = parseClientWorkbook(wb, D.scope || '');
+    if (!pend.rows.length) {
+      msg('⚠️ No valid vehicle data found in uploaded Excel file.');
+      return;
+    }
+    D = pend;
+    R = D.rows;
+    E = D.emp || {};
+    $('upd').textContent = D.upd + ' (uploaded)';
+    $('demo').hidden = true;
+    go(true);
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(pend));
+    } catch(e) {}
+
+    msg(`✅ Loaded ${pend.rows.length} vehicles successfully!`);
+    setTimeout(() => msg(''), 6000);
+  } catch(err) {
+    console.error(err);
+    msg('❌ Error: ' + err.message);
+  }
+};
+
+$('resetBtn').onclick = () => {
+  try {
+    localStorage.removeItem(storageKey);
+  } catch(e) {}
+  window.location.reload();
+};
+
+$('expBtn').onclick = () => {
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelector('#data').textContent = JSON.stringify(D);
+  ['bar', 'cards', 'b_a', 'b_pk', 'tabs', 'vt', 'vn', 'msg'].forEach(id => {
+    const el = clone.querySelector('#' + id);
+    if (el) el.innerHTML = '';
+  });
+  const blob = new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = document.title + '.html';
+  a.click();
+};
+// Live Auto-Sync & Manual Refresh System
+let lastDataUpd = D.upd || '';
+let isChecking = false;
+let rotAngle = 0;
+
+async function checkLiveUpdates(isManual = false) {
+  if (isChecking) return;
+  isChecking = true;
+  
+  const syncIcon = $('syncIcon');
+  const syncText = $('syncText');
+  const syncStatus = $('syncStatus');
+  
+  if (syncIcon) {
+    rotAngle += 360;
+    syncIcon.style.transform = 'rotate(' + rotAngle + 'deg)';
+  }
+  if (isManual && syncText) syncText.textContent = 'Checking...';
+  if (syncStatus) syncStatus.textContent = 'Checking updates...';
+  
+  let updated = false;
+
+  // 1. Try direct Excel fetch if served via HTTP server alongside workbook
+  try {
+    const xlRes = await fetch('HeadOffice_Master_PnL.xlsx?_t=' + Date.now(), { cache: 'no-store' });
+    if (xlRes.ok) {
+      const buf = await xlRes.arrayBuffer();
+      if (typeof XLSX !== 'undefined') {
+        const wb = XLSX.read(buf, { type: 'array' });
+        const fresh = parseClientWorkbook(wb, D.scope || 'National');
+        if (fresh && fresh.rows && fresh.rows.length) {
+          D = fresh;
+          R = D.rows;
+          E = D.emp || {};
+          lastDataUpd = D.upd || new Date().toISOString();
+          $('upd').textContent = D.upd + ' (Direct Excel Sync)';
+          go(false);
+          showToast('⚡ Live Update: Dashboard synced directly from HeadOffice_Master_PnL.xlsx!');
+          updated = true;
+        }
+      }
+    }
+  } catch (errXl) {
+    // Direct Excel fetch not reachable or CORS restricted, proceed to HTML sync
+  }
+
+  // 2. Fetch latest HTML dashboard file from server/cloud
+  if (!updated) {
+    try {
+      const url = window.location.href.split('#')[0].split('?')[0];
+      if (window.location.protocol !== 'file:') {
+        const res = await fetch(url + '?_t=' + Date.now(), { 
+          cache: 'no-store', 
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } 
+        });
+        if (res.ok) {
+          const txt = await res.text();
+          const match = txt.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/);
+          if (match) {
+            const fresh = JSON.parse(match[1]);
+            if (fresh && fresh.upd && fresh.upd !== lastDataUpd) {
+              lastDataUpd = fresh.upd;
+              D = fresh;
+              R = D.rows;
+              E = D.emp || {};
+              $('upd').textContent = D.upd + ' (Auto-synced)';
+              go(false);
+              showToast('⚡ Live Update: Dashboard updated automatically with latest Excel data!');
+              updated = true;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (isManual) {
+    if (syncText) syncText.textContent = 'Sync / Refresh Now';
+    if (!updated) {
+      showToast('✅ Up to date: You are already viewing the latest data.');
+    }
+  }
+  
+  if (syncStatus) {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    syncStatus.textContent = 'Last synced at ' + timeStr + ' (Auto every 15s)';
+  }
+  
+  isChecking = false;
+}
+
+// Hook up manual sync button
+const syncBtn = $('syncBtn');
+if (syncBtn) {
+  syncBtn.onclick = () => checkLiveUpdates(true);
+}
+
+// Auto-check every 15 seconds
+setInterval(() => checkLiveUpdates(false), 15000);
+
+// Auto-check whenever user switches back to this browser tab
+window.addEventListener('focus', () => checkLiveUpdates(false));
+
+function showToast(m) {
+  let t = $('live-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'live-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#065f46;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,0.25);z-index:99999;transition:all 0.4s ease;display:flex;align-items:center;gap:8px;border:1px solid #10b981;';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = '<span>🟢</span> ' + m;
+  t.style.opacity = '1';
+  t.style.transform = 'translateY(0)';
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateY(10px)';
+  }, 4500);
+}
+</script>
+</body></html>
