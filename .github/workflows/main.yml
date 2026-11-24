@@ -29,32 +29,55 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install openpyxl
+        run: pip install openpyxl requests
 
       - name: Fetch Latest Excel from OneDrive
         env:
           ONEDRIVE_EXCEL_URL: ${{ secrets.ONEDRIVE_EXCEL_URL }}
         run: |
           python -c "
-          import os, urllib.request
+          import os, re, requests
+
           url = os.environ.get('ONEDRIVE_EXCEL_URL', '').strip().strip('\"\'')
           if url.startswith('http'):
-              print('Attempting to download from OneDrive...')
+              print('Connecting to OneDrive/SharePoint...')
               fetch_url = url
               if 'download=1' not in fetch_url:
                   fetch_url += ('&download=1' if '?' in fetch_url else '?download=1')
+              
+              s = requests.Session()
+              s.headers.update({
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+              })
+              
+              success = False
               try:
-                  req = urllib.request.Request(fetch_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-                  with urllib.request.urlopen(req, timeout=30) as resp:
-                      data = resp.read()
-                      if data[:4] == b'PK\x03\x04':
-                          with open('HeadOffice_Master_PnL.xlsx', 'wb') as f:
-                              f.write(data)
-                          print(f'Successfully downloaded updated Excel ({len(data)} bytes) from OneDrive!')
-                      else:
-                          print('Warning: Downloaded content is not a valid Excel file. Keeping existing.')
+                  resp = s.get(fetch_url, timeout=45, allow_redirects=True)
+                  print(f'HTTP Status: {resp.status_code}, Content-Type: {resp.headers.get(\"Content-Type\")}, Size: {len(resp.content)} bytes')
+                  
+                  if resp.content[:4] == b'PK\x03\x04':
+                      with open('HeadOffice_Master_PnL.xlsx', 'wb') as f:
+                          f.write(resp.content)
+                      print(f'Successfully downloaded updated Excel ({len(resp.content)} bytes) from OneDrive!')
+                      success = True
+                  else:
+                      print(f'Preview of received content: {resp.content[:150]!r}')
+                      m = re.search(r'https?://[^\s\"\'<>]+download\.aspx[^\s\"\'<>]+', resp.text)
+                      if m:
+                          dl_url = m.group(0).replace('&amp;', '&')
+                          print('Found direct download link in HTML. Attempting second fetch...')
+                          resp2 = s.get(dl_url, timeout=45, allow_redirects=True)
+                          if resp2.content[:4] == b'PK\x03\x04':
+                              with open('HeadOffice_Master_PnL.xlsx', 'wb') as f:
+                                  f.write(resp2.content)
+                              print(f'Successfully downloaded via embedded download link ({len(resp2.content)} bytes)!')
+                              success = True
               except Exception as e:
-                  print(f'Notice: Could not fetch from OneDrive URL: {e}')
+                  print(f'Notice during fetch: {e}')
+                  
+              if not success:
+                  print('Warning: Downloaded content is not a valid Excel file. Keeping existing.')
           else:
               print('No valid ONEDRIVE_EXCEL_URL found. Using existing copy.')
           "
