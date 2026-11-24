@@ -38,10 +38,29 @@ jobs:
         env:
           ONEDRIVE_EXCEL_URL: ${{ secrets.ONEDRIVE_EXCEL_URL }}
         run: |
-          if [ -n "$ONEDRIVE_EXCEL_URL" ]; then
-            echo "Fetching latest HeadOffice_Master_PnL.xlsx from OneDrive..."
-            curl -L -o HeadOffice_Master_PnL.xlsx "$ONEDRIVE_EXCEL_URL"
-          fi
+          python -c "
+          import os, urllib.request
+          url = os.environ.get('ONEDRIVE_EXCEL_URL', '').strip().strip('\"\'')
+          if url.startswith('http'):
+              print('Attempting to download from OneDrive...')
+              fetch_url = url
+              if 'download=1' not in fetch_url:
+                  fetch_url += ('&download=1' if '?' in fetch_url else '?download=1')
+              try:
+                  req = urllib.request.Request(fetch_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      data = resp.read()
+                      if data[:4] == b'PK\x03\x04':
+                          with open('HeadOffice_Master_PnL.xlsx', 'wb') as f:
+                              f.write(data)
+                          print(f'Successfully downloaded updated Excel ({len(data)} bytes) from OneDrive!')
+                      else:
+                          print('Warning: Downloaded content is not a valid Excel file. Keeping existing.')
+              except Exception as e:
+                  print(f'Notice: Could not fetch from OneDrive URL: {e}')
+          else:
+              print('No valid ONEDRIVE_EXCEL_URL found. Using existing copy.')
+          "
 
       - name: Run PnL Sync
         run: python sync_pnl.py
