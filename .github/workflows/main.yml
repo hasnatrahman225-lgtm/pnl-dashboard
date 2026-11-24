@@ -34,6 +34,15 @@ jobs:
       - name: Install dependencies
         run: pip install openpyxl
 
+      - name: Fetch Latest Excel from OneDrive
+        env:
+          ONEDRIVE_EXCEL_URL: ${{ secrets.ONEDRIVE_EXCEL_URL }}
+        run: |
+          if [ -n "$ONEDRIVE_EXCEL_URL" ]; then
+            echo "Fetching latest HeadOffice_Master_PnL.xlsx from OneDrive..."
+            curl -L -o HeadOffice_Master_PnL.xlsx "$ONEDRIVE_EXCEL_URL"
+          fi
+
       - name: Run PnL Sync
         run: python sync_pnl.py
 
