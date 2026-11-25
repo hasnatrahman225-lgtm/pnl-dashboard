@@ -398,7 +398,7 @@ td{{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-s
 td:first-child{{text-align:left}}
 tr.k{{cursor:pointer}}tr.k:hover td{{background:var(--bg)}}tr.l td{{background:var(--negbg)}}
 .chip{{padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px}}.chip.ok{{background:var(--posbg);color:var(--pos)}}.chip.err{{background:var(--negbg);color:var(--neg)}}
-.br{{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;margin:5px 0;font-size:12px}}.br i{{display:block;height:14px;border-radius:4px}}
+.br{{display:grid;grid-template-columns:140px 1fr 90px;gap:6px;align-items:center;margin:4px 0;font-size:12px}}.br i{{display:block;height:14px;border-radius:4px}}
 .mut{{color:var(--mut)}}
 .up{{padding:8px 14px;border:0;border-radius:8px;background:#fff;color:var(--b1);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}}
 .up:hover{{background:#f0f4ff}}
@@ -615,16 +615,11 @@ function bars(id, g) {{
   const mx = Math.max(1, ...g.map(x => Math.abs(x.net)));
   $(id).innerHTML = g.length ? g.map(x => `
     <div class="br" title="${{x.key}}: ${{full(x.net)}} BDT (${{x.n}} Qty)">
-      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${{x.key}} (${{x.n}} Qty)">
-        <span>${{x.key}}</span> <span style="font-size:11px;color:var(--mut);font-weight:600">(${{x.n}})</span>
-      </div>
+      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${{x.key}} (${{x.n}} Qty)">${{x.key}} <span class="mut" style="font-weight:600">(${{x.n}})</span></div>
       <div style="background:var(--line);border-radius:4px;overflow:hidden;height:14px">
         <i style="width:${{(Math.abs(x.net) / mx * 100).toFixed(1)}}%;background:${{x.net < 0 ? 'var(--neg)' : 'var(--pos)'}}"></i>
       </div>
-      <div style="text-align:right;line-height:1.2;min-width:65px">
-        <div class="${{cl(x.net)}}" style="font-weight:700">${{fm(x.net)}}</div>
-        <div style="font-size:10.5px;color:var(--mut);font-weight:600">${{x.n}} Qty</div>
-      </div>
+      <div style="text-align:right" class="${{cl(x.net)}}">${{fm(x.net)}}</div>
     </div>`).join('') : '<div class="mut">No data</div>';
 }}
 
