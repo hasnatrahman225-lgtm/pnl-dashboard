@@ -398,7 +398,7 @@ td{{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-s
 td:first-child{{text-align:left}}
 tr.k{{cursor:pointer}}tr.k:hover td{{background:var(--bg)}}tr.l td{{background:var(--negbg)}}
 .chip{{padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px}}.chip.ok{{background:var(--posbg);color:var(--pos)}}.chip.err{{background:var(--negbg);color:var(--neg)}}
-.br{{display:grid;grid-template-columns:130px 1fr 90px;gap:6px;align-items:center;margin:4px 0;font-size:12px}}.br i{{display:block;height:14px;border-radius:4px}}
+.br{{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;margin:5px 0;font-size:12px}}.br i{{display:block;height:14px;border-radius:4px}}
 .mut{{color:var(--mut)}}
 .up{{padding:8px 14px;border:0;border-radius:8px;background:#fff;color:var(--b1);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;box-shadow:0 2px 4px rgba(0,0,0,0.1)}}
 .up:hover{{background:#f0f4ff}}
@@ -611,22 +611,22 @@ function cards(s) {{
   `;
 }}
 
-function bars(id, g) {
+function bars(id, g) {{
   const mx = Math.max(1, ...g.map(x => Math.abs(x.net)));
   $(id).innerHTML = g.length ? g.map(x => `
-    <div class="br" title="${x.key}: ${full(x.net)} BDT (${x.n} Qty)">
-      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${x.key} (${x.n} Qty)">
-        <span>${x.key}</span> <span style="font-size:11px;color:var(--mut);font-weight:600">(${x.n})</span>
+    <div class="br" title="${{x.key}}: ${{full(x.net)}} BDT (${{x.n}} Qty)">
+      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${{x.key}} (${{x.n}} Qty)">
+        <span>${{x.key}}</span> <span style="font-size:11px;color:var(--mut);font-weight:600">(${{x.n}})</span>
       </div>
       <div style="background:var(--line);border-radius:4px;overflow:hidden;height:14px">
-        <i style="width:${(Math.abs(x.net) / mx * 100).toFixed(1)}%;background:${x.net < 0 ? 'var(--neg)' : 'var(--pos)'}"></i>
+        <i style="width:${{(Math.abs(x.net) / mx * 100).toFixed(1)}}%;background:${{x.net < 0 ? 'var(--neg)' : 'var(--pos)'}}"></i>
       </div>
       <div style="text-align:right;line-height:1.2;min-width:65px">
-        <div class="${cl(x.net)}" style="font-weight:700">${fm(x.net)}</div>
-        <div style="font-size:10.5px;color:var(--mut);font-weight:600">${x.n} Qty</div>
+        <div class="${{cl(x.net)}}" style="font-weight:700">${{fm(x.net)}}</div>
+        <div style="font-size:10.5px;color:var(--mut);font-weight:600">${{x.n}} Qty</div>
       </div>
     </div>`).join('') : '<div class="mut">No data</div>';
-}
+}}
 
 function tbl(title, k, g, fk) {{
   return `
@@ -1054,7 +1054,32 @@ function showToast(m) {{
 </body></html>"""
     return html
 
+def check_and_fetch_onedrive():
+    url = os.environ.get('ONEDRIVE_EXCEL_URL', '').strip()
+    if not url:
+        return
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Checking for updates from OneDrive URL...")
+    try:
+        import urllib.request
+        fetch_url = url
+        if 'download=1' not in fetch_url:
+            fetch_url += ('&download=1' if '?' in fetch_url else '?download=1')
+        req = urllib.request.Request(fetch_url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = resp.read()
+            if data[:4] == b'PK\x03\x04':
+                with open(EXCEL_FILE, 'wb') as f:
+                    f.write(data)
+                print(f"  -> Successfully downloaded fresh {EXCEL_FILE} ({len(data)} bytes) from OneDrive!")
+            else:
+                print(f"  -> Warning: Downloaded content is not an Excel format (starts with {data[:10]}). Check URL permissions.")
+    except Exception as e:
+        print(f"  -> Notice: Could not fetch from OneDrive URL: {e}")
+
 def run_sync():
+    check_and_fetch_onedrive()
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Reading {EXCEL_FILE}...")
     try:
         rows, emp_map = parse_excel()
