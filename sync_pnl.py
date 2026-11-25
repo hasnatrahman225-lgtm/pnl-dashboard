@@ -611,17 +611,22 @@ function cards(s) {{
   `;
 }}
 
-function bars(id, g) {{
+function bars(id, g) {
   const mx = Math.max(1, ...g.map(x => Math.abs(x.net)));
   $(id).innerHTML = g.length ? g.map(x => `
-    <div class="br" title="${{x.key}}: ${{full(x.net)}} BDT">
-      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{x.key}}</div>
-      <div style="background:var(--line);border-radius:4px;overflow:hidden;height:14px">
-        <i style="width:${{(Math.abs(x.net) / mx * 100).toFixed(1)}}%;background:${{x.net < 0 ? 'var(--neg)' : 'var(--pos)'}}"></i>
+    <div class="br" title="${x.key}: ${full(x.net)} BDT (${x.n} Qty)">
+      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${x.key} (${x.n} Qty)">
+        <span>${x.key}</span> <span style="font-size:11px;color:var(--mut);font-weight:600">(${x.n})</span>
       </div>
-      <div style="text-align:right" class="${{cl(x.net)}}">${{fm(x.net)}}</div>
+      <div style="background:var(--line);border-radius:4px;overflow:hidden;height:14px">
+        <i style="width:${(Math.abs(x.net) / mx * 100).toFixed(1)}%;background:${x.net < 0 ? 'var(--neg)' : 'var(--pos)'}"></i>
+      </div>
+      <div style="text-align:right;line-height:1.2;min-width:65px">
+        <div class="${cl(x.net)}" style="font-weight:700">${fm(x.net)}</div>
+        <div style="font-size:10.5px;color:var(--mut);font-weight:600">${x.n} Qty</div>
+      </div>
     </div>`).join('') : '<div class="mut">No data</div>';
-}}
+}
 
 function tbl(title, k, g, fk) {{
   return `
